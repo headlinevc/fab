@@ -11,26 +11,27 @@ You'll get pushback first — is CSV export the actual problem, or is it data po
 
 You're in the loop four times: challenge the framing, approve the spec, test the build, land the PR. That's it.
 
-## Inspired by, but built differently
+## Inspired by, and what we did differently
 
-fab borrows ideas from three projects worth reading on their own:
+Three projects shaped how we thought about fab. Each is worth reading on its own terms.
 
-- [**gstack**](https://github.com/garrytan/gstack) — Garry Tan's stack of agent commands for shipping features.
-- [**gastown**](https://github.com/gastownhall/gastown) — Steve Yegge's exploration of LLM-orchestrated dev workflows.
-- [**superpowers**](https://github.com/obra/superpowers) — obra's library of skill primitives.
+- [**gstack**](https://github.com/garrytan/gstack) — Garry Tan's roster of slash-command roles (CEO, eng manager, designer, reviewer, QA, security, release engineer) for shipping features through Claude Code. Its [`ETHOS.md`](https://github.com/garrytan/gstack/blob/main/ETHOS.md) makes the case for "User Sovereignty" as a stated principle — *"AI models recommend. Users decide... Never act."* In practice the shape varies by command (autoplan is fairly autonomous with two gates; office-hours and design-consultation pause through wireframe review). gstack is where we got the idea that turning agents into specialists with strong POVs beats turning them into generalists.
 
-What we wanted that none of them gave us: **minimal human-in-the-loop**. Each of those projects pauses to check in with you a lot — confirm this, review that, pick from these options, approve before continuing. That's safe but it's slow, and it shifts the cognitive load back to you exactly when you wanted to offload it.
+- [**gastown**](https://github.com/gastownhall/gastown) — Steve Yegge's multi-agent orchestration system (Mayor coordinator + Polecat workers + Beads ledger for persistent work state). Different category from fab — it's the *runtime* you'd coordinate many agents on, not a feature-shipping workflow. We borrowed the idea that work state must live outside the agent's memory in a file the next agent can read. fab's `.fab` pipeline-state file is the budget version of that idea.
 
-fab pauses at four points and four points only. They're the places where human judgment changes the outcome:
+- [**superpowers**](https://github.com/obra/superpowers) — Jesse Vincent's composable skills library and 7-step workflow (brainstorm → worktree → plan → subagent execution → TDD → review → finish). Closest precedent to fab in shape: a few human touchpoints (validate design, approve plan, "say go", choose merge/PR/keep/discard) and long autonomous stretches in between. The "fresh subagent per task with two-stage review" pattern is one we carried forward into Stage 4.
 
-1. **Challenge** — is this the right thing to build?
-2. **Approve** — is this the right spec to build it from?
-3. **Test** — did the running thing actually solve the problem?
-4. **Land** *(optional)* — merge now or later?
+We're not faster on touchpoint count — superpowers gets there too. What fab does that we couldn't get from any of these three:
 
-Outside those four, fab doesn't ask. It picks advisors based on what the change touches, decides which patterns to follow, fixes its own CI failures, judges which automated-review comments to act on and which to dismiss, and audits its own docs. If it's wrong about something, you'll catch it at the next touchpoint and redirect. If it's not wrong, you saved an hour of micro-decisions that an agent should have made on its own.
+1. **Gate-enforced pipeline.** A `PreToolUse` hook (`fab-gate.sh`) physically blocks `git commit` until both standard and adversarial code reviews are recorded in `.fab`, and blocks `gh pr create` until a commit hash is recorded. The discipline lives in the hook, not in prompt instructions an agent could rationalize past. None of the three inspirations gate via `PreToolUse` — superpowers' hook config is `SessionStart`-only, gstack ships none.
 
-The hard gates aren't human approvals. They're a pre-tool-call hook (`fab-gate.sh`) that physically blocks `git commit` until standard + adversarial code reviews have run, and blocks `gh pr create` until a commit exists. You can't accidentally skip them. The agent can't either.
+2. **Adversarial review as a separate stage, not a code-review checkbox.** Stage 4.6 hunts bugs; Stage 4.7 questions the design itself — *"should you have built it this way at all?"* Two distinct sub-agent passes with different prompts. They find different things.
+
+3. **Advisors with stated points of view that don't overlap.** Each advisor (UX, API, Security, Performance, Brand Voice, Product, Taste) has a one-paragraph POV defining what they own and what they explicitly don't. UX owns *easy*. Product owns *valuable*. Taste owns *joyful*. Findings in someone else's domain go to that advisor. Stops the "everyone reviews everything and agrees with each other" pile-on.
+
+4. **The ux-advisor skill as a working example of advisor depth.** It's 586 lines on its own — a 14-step critique protocol with a worked example, full reference library, and explicit anti-patterns. Ships in this same plugin and runs both as fab Stage 2.5 (pre-flight on the spec) and as `/ux-advisor` standalone. The point is to demonstrate what an advisor looks like when you stop treating it as a generic role and start treating it as a tool.
+
+The four human touchpoints we kept — challenge framing, approve spec, test build, land PR — are the places we couldn't talk ourselves into letting an agent decide. Everything else, an agent decides faster than a human can answer the question.
 
 ## Install
 
