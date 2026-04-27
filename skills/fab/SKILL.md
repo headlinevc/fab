@@ -70,7 +70,7 @@ if ! grep -q 'fab-gate' ~/.claude/settings.json 2>/dev/null; then
   echo "Installing fab-gate hook..."
 
   # Find the hook script — first in the plugin cache, then alongside this skill.
-  HOOK_SRC=$(find ~/.claude/plugins/cache -path "*/fab/*/hooks/fab-gate.sh" -type f 2>/dev/null | sort -V | tail -1)
+  HOOK_SRC=$(find ~/.claude/plugins/cache -path "*/skills/fab/hooks/fab-gate.sh" -type f 2>/dev/null | sort -V | tail -1)
 
   if [ -z "$HOOK_SRC" ] && [ -n "$FAB_BASE" ]; then
     HOOK_SRC="$FAB_BASE/hooks/fab-gate.sh"
@@ -390,9 +390,17 @@ The three UI-adjacent advisors own distinct questions. If an advisor's finding c
 
 ### 2.5 UX pre-flight (if UX Advisor is on the team)
 
-If the team includes a UX Advisor, run a pre-flight critique on the spec **before implementation begins**. Design-level problems caught here cost nothing to fix; the same problems caught in 4.3 cost a full implementation cycle.
+If the team includes a UX Advisor, run a pre-flight critique on the spec **before implementation begins**. Design-level problems caught here cost nothing to fix; the same problems caught in 4.4 cost a full implementation cycle.
 
-Use the inlined UX critique protocol in §4.3.1 below. Frame the input as: "Here is the spec for a feature we are about to build. Critique the proposed interaction model and information hierarchy before implementation." Provide the audience (from `Audience:` in CLAUDE.md), the key UI surfaces from the EARS requirements, and the solution approach.
+Invoke the sibling `ux-advisor` skill (shipped in this same plugin):
+
+```
+Skill: ux-advisor
+```
+
+Frame the input as: "Here is the spec for a feature we are about to build. The proposed UI is described in the EARS requirements. Critique the interaction model and information hierarchy before implementation." Provide the audience (from `Audience:` in CLAUDE.md or ask), the key UI surfaces, and the solution approach.
+
+If `ux-advisor` is not available (someone copied just `skills/fab/SKILL.md` without the rest of the plugin), fall back to the inlined protocol in §4.4.1 below.
 
 If pre-flight finds Critical or Important issues, revise the spec before Stage 3 and update the tracker entry. Surface findings in the Stage 3 checkpoint summary so the user sees the design has been challenged before they approve.
 
@@ -700,26 +708,20 @@ Agent tool:
 4. Voice at the moment-of-truth: copy at first run, error recovery, the "I'm not cut out for this" moment. "Something went wrong" is not voice.
 5. Inevitability: if any element were removed, would it be obviously worse? If 3+ elements are removable without loss, it's over-decided by committee.
 
-**UX Advisor:** see §4.4.1 below — full inlined protocol.
+**UX Advisor:** invoke the sibling `ux-advisor` skill — `Skill: ux-advisor`. It's a self-contained protocol covering persona ID, first-fixation reasoning, mental-math audits, Jakob's Law conformance, cognitive-bias scanning, craft checks, affordance alternatives, and simplification. Provide it the audience (`Audience:` from CLAUDE.md), the surfaces touched, and screenshots if the dev server is running. If `ux-advisor` is not installed, fall back to §4.4.1 below.
 
 **Custom advisors:** Generate 4–6 review focuses derived directly from their POV statement. Each focus should be something concrete they would check in the actual code.
 
-#### 4.4.1 UX Advisor protocol (inlined)
+#### 4.4.1 UX Advisor protocol (compressed fallback)
 
-<!-- ━━━ INLINED: UX-ADVISOR ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     The UX critique protocol below is a substantial inlined skill — it
-     covers persona identification, first-fixation reasoning, mental-math
-     audits, Jakob's Law conformance, cognitive-bias scanning, accessibility
-     and craft checks, and a structured output format.
+<!-- ━━━ FALLBACK: UX-ADVISOR ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     PRIMARY PATH: invoke the sibling `ux-advisor` skill (this plugin ships it
+     at `skills/ux-advisor/SKILL.md`). The sibling has the full protocol
+     including reference library, worked example, and anti-patterns.
 
-     OPPORTUNITY: This is the single largest inlined section in fab and the
-     clearest candidate for extraction. It deserves its own `ux-advisor` skill
-     because: (1) it's useful standalone for ad-hoc design critiques outside
-     fab, (2) it has its own reference library worth growing independently,
-     (3) it can take optional inputs (screenshots, dev-server URLs) that
-     warrant their own argument schema. Recommended action if you're building
-     a plugin marketplace: extract this into a standalone skill and have fab
-     compose it via `Skill: ux-advisor`. Kept inline so fab works on its own.
+     This compressed version is the FALLBACK for the case where someone copied
+     only `skills/fab/SKILL.md` without the rest of the plugin. It contains
+     the protocol in skeleton form so fab still works zero-dependency.
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
 
 You are a senior UX advisor. Your job is not to produce a checklist — it is to **narrate a reasoning chain** the user can argue with.
@@ -1086,16 +1088,18 @@ After 2 fix attempts: "Tests are failing after 2 fix attempts. Here's what's fai
 
 ---
 
-## Extracting inlined sections
+## Composition with sibling skills
 
-This skill is intentionally self-contained — it has zero plugin dependencies. The cost of that is size: several substantial protocols are inlined that could each stand alone as their own skill. Each inlined section starts with an `INLINED:` HTML comment block calling out the extraction opportunity:
+This plugin ships two skills: `fab` (this file) and `ux-advisor`. Fab composes ux-advisor as a sibling for the substantial UI critique work in §2.5 and §4.4 — that's the showcase example of how an advisor can be beefed up into a serious standalone protocol with its own reference library and worked example.
 
-| Section | Inlined as | Where |
-|---------|-----------|-------|
-| Sharpen (product challenge) | Stage 1 | `## Stage 1` |
-| Create-worktree | Stage 4.1 (script: `create-worktree.sh`) | `### 4.1` |
-| UX Advisor protocol | Stage 4.4.1 | `#### 4.4.1` |
-| Standard code review (codex CLI wrapper) | Stage 4.6 | `### 4.6` |
-| Greptile / automated review fix | Stage 7 step 3 | `### Stage 7` |
+The remaining inlined sections are good candidates for the same extraction treatment if you want to grow the plugin. Each is marked with an `INLINED:` comment block in the skill body.
 
-If you maintain a Claude Code plugin marketplace, extracting any of these into standalone skills lets fab compose them via the `Skill` tool (`Skill: yourplugin:sharpen`) instead of carrying the inline body. The tradeoff is users must install your plugin too. This standalone repo errs on the side of self-containment.
+| Section | Status | Where |
+|---------|--------|-------|
+| Sharpen (product challenge) | inlined; extraction candidate | Stage 1 |
+| Create-worktree | sibling script (`create-worktree.sh`) | §4.1 |
+| UX Advisor protocol | **sibling skill** (`Skill: ux-advisor`); compressed fallback inlined | §2.5, §4.4 |
+| Standard / adversarial code review | inlined; uses `codex` CLI | §4.6, §4.7 |
+| Automated-review fix (Greptile et al.) | inlined; extraction candidate | Stage 7 |
+
+The fab skill alone is usable zero-dependency: each `Skill: ux-advisor` invocation has an inline fallback. Installing the full plugin gives you the richer ux-advisor critique.

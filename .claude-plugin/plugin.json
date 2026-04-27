@@ -1,0 +1,6 @@
+{
+  "name": "fab",
+  "description": "End-to-end feature fabrication for Claude Code: idea → tested, reviewed, shipped feature with four human touchpoints. Ships fab (the orchestrator) and ux-advisor (a rich UX critique protocol fab composes during pre-flight and advisory review).",
+  "homepage": "https://github.com/headlinevc/fab",
+  "license": "MIT"
+}

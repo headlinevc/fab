@@ -1,0 +1,15 @@
+{
+  "name": "fab",
+  "owner": {
+    "name": "Headline VC",
+    "url": "https://github.com/headlinevc"
+  },
+  "plugins": [
+    {
+      "name": "fab",
+      "source": "./",
+      "description": "End-to-end feature fabrication: pressure-test framing, write spec, isolate worktree, dispatch staff engineer + advisors, run standard + adversarial code reviews, visual QA, ship. Includes ux-advisor as a sibling skill.",
+      "version": "0.1.0"
+    }
+  ]
+}
