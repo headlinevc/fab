@@ -141,7 +141,7 @@ Stages 4.6 and 4.7 (standard + adversarial code review) and the commit are gate-
 
 ## License
 
-[MIT](LICENSE) © 2026 Headline VC.
+[MIT](LICENSE) © 2026 Headline Services US, LLC.
 
 ## Credits
 
